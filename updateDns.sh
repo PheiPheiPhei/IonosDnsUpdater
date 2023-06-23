@@ -62,24 +62,6 @@ else
 fi
 }
 
-GetIpFromBox()
-{
-	log "Get IP from $BOX_IP."
-	# get authorization	
-	curl -s -o $context -k "http://"$BOX_IP"/ws" -c $cookie -X POST --compressed -H "$login" -H "$content_type_box" --data-raw '{"service":"sah.Device.Information","method":"createContext","parameters":{"applicationName":"webui","username":"'$BOX_USER'","password":"'$BOX_PASSWORD'"}}'
-	# set authorization context ID
-	CTX=$(cat $context | jq -c .data.contextID | tr -d '"')
-	GRP=$(cat $context | jq -c .data.groups)
-	IE=$CTX'","username":"'$BOX_USER'","groups":'$GRP'}}'
-	ID2=$(tail -n1 $cookie | sed 's/#HttpOnly_'$BOX_IP'\tFALSE\t[/]\tFALSE\t0\t//1' | sed 's/sessid\t/sessid=/1')
-#	log "IE : $IE"
-#	log "ID2 : $ID2"
-	res=$(curl -s -k "http://"$BOX_IP"/ws" -X POST -H "$content_type_box" -H "$authorisation"$IE  -H "Cookie: "$ID2 --data-raw '{"service":"NMC","method":"getWANStatus","parameters":{}}')
-#	log "res : $res"
-	ipv4=$(echo $res | jq -c .data.IPAddress | tr -d '"')
-	ipv6=$(echo $res | jq -c .data.IPv6Address | tr -d '"')
-}
-
 
 GetIpFromExt()
 {
@@ -92,17 +74,8 @@ GetIpFromExt()
 GetExtIpAdress() 
 {
     log "------------------"
-	if [ "$BOX_IP" = "$(echo $BOX_IP | grep -E '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}$')" ] && [ -n $BOX_IP ] ; then
-		GetIpFromBox
-	fi
+    GetIpFromExt
 
-    if [ "$ipv4" = "$(echo $ipv4 | grep -E '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}$')" ] && [ -n $ipv4 ] ;  then
-		log "Ipv4 from Box : $ipv4"
-
-	else
-		# try to get IP from externl source
-		GetIpFromExt
-	fi
 
     log "ipv4 : $ipv4"
 	log "ipv6 : $ipv6"
